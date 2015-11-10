@@ -1,0 +1,42 @@
+#!/bin/bash
+
+githubmergerepo=git@github.com:ceylon/ceylon-obr-test.git
+# temporary test!!
+#githubmergerepo=../pushtest
+######
+
+merge_and_push_repository ()
+{
+    local repo=$1
+
+    echo "************************************************************"
+    echo "Merging repository $repo ..."
+
+    git merge -q -m "OBR merge of $repo" origin/$repo-master
+
+    echo ""
+}
+
+if [ ! -d obr-temp ];
+then
+   echo "**** OBR-merge working directory not found, you have to run step 1 and 2 first"
+   exit 1
+fi
+
+pushd obr-temp
+
+rm -rf "final-merge"
+mkdir "final-merge"
+pushd "final-merge"
+
+git clone $githubmergerepo "final-merge-repo"
+pushd "final-merge-repo"
+
+for name in "common" "runtime" "cmr" "language" "compiler-js" "compiler-java" "typechecker" "model" "dist"
+do
+    merge_and_push_repository $name
+done
+
+git push -q --all
+git push -q --tags
+

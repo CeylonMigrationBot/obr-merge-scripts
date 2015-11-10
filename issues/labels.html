@@ -1,0 +1,34 @@
+<html>
+<head>
+<title>OBR Labels</title>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="github.js"></script>
+<script type="text/javascript" src="migrate.js"></script>
+<style>
+#monitor {
+    position: fixed;
+    top: 1px;
+    right: 1px;
+    border-width: 1px;
+    border-style: solid;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+</style>
+</head>
+<body>
+    <a href="index.html"><-- Back to index</a>
+    <h1>Migrate Labels</h1>
+    <button onclick="fetchAllLabels()">Fetch Labels</button>
+    <hr>
+    <div id="labels"></div>
+    <hr>
+    <div id="overview"></div>
+    <hr>
+    <div id=deleting></div>
+    <div id=creating></div>
+    <div id="monitor">Limit: <span id="limit">?</span></div>
+</body>
+</html>

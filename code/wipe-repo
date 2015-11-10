@@ -1,0 +1,55 @@
+#!/bin/bash
+
+githubmergerepo=git@github.com:ceylon/ceylon-obr-test.git
+# temporary test!!
+#githubmergerepo=../pushtest
+######
+
+wipe_repo ()
+{
+    echo "Wiping remote repository in 10 seconds!!!"
+    sleep 5
+    echo "Wiping remote repository in 5 seconds!!!"
+    sleep 1
+    echo "Wiping remote repository in 4 seconds!!!"
+    sleep 1
+    echo "Wiping remote repository in 3 seconds!!!"
+    sleep 1
+    echo "Wiping remote repository in 2 seconds!!!"
+    sleep 1
+    echo "Wiping remote repository in 1 seconds!!!"
+    sleep 1
+    mkdir wipetemp
+    pushd wipetemp
+    git clone -q $githubmergerepo wiperepo1
+    pushd wiperepo1
+    git push origin --delete `git branch -r | grep -v \/master | sed 's/origin\///'| xargs echo`
+    git push --delete origin `git tag`
+    popd
+    popd
+    git clone -q --mirror ../clean-repo wiperepo2
+    pushd wiperepo2
+    git remote add pushtarget $githubmergerepo
+    git push --force --all pushtarget
+    git push --force --tags pushtarget
+    popd
+    rm -rf wipetemp
+    rm -rf wiperepo2
+}
+
+if [ ! -d obr-temp ];
+then
+   echo "**** OBR-merge working directory not found, you have to run step 1 and 2 first"
+   exit 1
+fi
+
+pushd obr-temp
+
+# Remove any temporary repository left over from the previous run
+rm -rf wipetemp
+rm -rf wiperepo2
+rm -rf temprepo
+
+# Now we wipe the target repository
+wipe_repo
+

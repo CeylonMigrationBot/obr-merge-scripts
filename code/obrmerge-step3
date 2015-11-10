@@ -1,0 +1,99 @@
+#!/bin/bash
+
+githubmergerepo=git@github.com:ceylon/ceylon-obr-test3.git
+# temporary test!!
+#githubmergerepo=../pushtest
+######
+
+push_branch ()
+{
+    local branch=$1
+    local targetbranch=$2
+
+    echo "Pushing branch $branch ..."
+    git checkout -q -t origin/$branch
+
+    local refcnt=`git rev-list --first-parent HEAD | wc -l`
+    #local refcnt2=`git rev-list HEAD --not --remotes=pushtarget | wc -l`
+    echo "Branch head has $refcnt parents"
+
+    let start=refcnt-1
+    for i in $(seq $start -500 0)
+    do
+        echo "Pushing up to the $i th ref"
+        git push -q pushtarget $branch~$i:refs/heads/$targetbranch
+    done
+    echo "Pushing the rest"
+    git push -q pushtarget $branch:refs/heads/$targetbranch
+}
+
+merge_and_push_repository ()
+{
+    local repo=$1
+
+    # Check if repository exists
+    if [ ! -d "$repo" ];
+    then
+       echo "**** Repository $repo not found, skipping"
+       return
+    fi
+
+    pushd $repo
+
+    # Check if step2 was done yet
+    if [ ! -f .step2 ];
+    then
+       echo "**** Please run OBR-merge step2 for $repo first, skipping"
+       return
+    fi
+
+    # Get list of branches (removing "master" and the current branch indicator "*")
+    local branches=`git branch | sed -r -e 's/\*|master//g'`
+
+    popd
+
+    echo "************************************************************"
+    echo "Merging repository $repo ..."
+
+    # Now create a temporary clone of the repository
+    git clone $repo temprepo
+    pushd temprepo
+
+    # And merge the target repository into it
+    git remote add pushtarget $githubmergerepo
+
+    push_branch "master" "${repo}-master"
+    if [ ! -z "$branches" ];
+    then
+        for b in $branches
+        do
+            push_branch $b $b
+        done
+    fi
+
+    # Now push the tags (and do an -all just to be sure)
+    git push -q --tags pushtarget
+
+    # Remove temporary repository
+    popd
+    rm -rf temprepo
+
+    echo ""
+}
+
+if [ ! -d obr-temp ];
+then
+   echo "**** OBR-merge working directory not found, you have to run step 1 and 2 first"
+   exit 1
+fi
+
+pushd obr-temp
+
+# Make sure to get rid of temp stuff first
+rm -rf temprepo
+
+for name in "common" "runtime" "cmr" "language" "compiler-js" "compiler-java" "typechecker" "model" "dist"
+do
+    merge_and_push_repository $name
+done
+

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+git push origin --delete `git branch -r | grep -v master | sed 's/origin\///'| xargs echo`
+git push --delete origin `git tag`

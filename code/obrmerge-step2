@@ -1,0 +1,73 @@
+#!/bin/bash
+
+rename_tags_branches ()
+{
+    local repo=$1
+
+    # Check if repository exists
+    if [ ! -d "$repo" ];
+    then
+       echo "**** Repository $repo not found, skipping"
+       return
+    fi
+
+    pushd $repo
+
+    # Check if the renaming was already done
+    if [ -f .step2 ];
+    then
+       echo "**** OBR-merge step2 was already run for $repo, skipping"
+       return
+    fi
+
+    echo "************************************************************"
+    echo "Renaming tags & branches for $repo ..."
+
+    # Get list of branches (removing "master" and the current branch indicator "*")
+    local branches=`git branch | sed -r -e 's/\*|master//g'`
+
+    if [ ! -z "$branches" ];
+    then
+        for b in $branches
+        do
+            echo "Renaming branch $b to $repo-$b ..."
+            git branch -m "$b" "$repo-$b"
+        done
+    fi
+
+    # Get list of tags
+    local tags=`git tag`
+
+    if [ ! -z "$tags" ];
+    then
+        for t in $tags
+        do
+            echo "Renaming tag $t to $repo-$t ..."
+            git tag "$repo-$t" "$t"
+            git tag -d "$t"
+        done
+    fi
+
+    # so some house keeping
+    #git gc --aggressive
+
+    # Mark that this step was performed for this repository
+    touch .step2
+
+    echo ""
+    popd
+}
+
+if [ ! -d obr-temp ];
+then
+   echo "**** OBR-merge working directory not found, you have to run step1 first"
+   exit 1
+fi
+
+pushd obr-temp
+
+for name in "common" "language" "runtime" "cmr" "compiler-js" "compiler-java" "typechecker" "model" "dist"
+do
+    rename_tags_branches $name
+done
+

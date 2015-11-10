@@ -1,0 +1,77 @@
+#!/bin/bash
+
+githubmergerepo=git@github.com:ceylon/ceylon-obr-test.git
+# temporary test!!
+#githubmergerepo=../pushtest
+######
+
+add_remote ()
+{
+    local repo=$1
+
+    echo "************************************************************"
+    echo "Adding $repo as remote..."
+
+#    git merge -q -m "OBR merge of $repo" origin/$repo-master
+    git remote add $repo ../../$repo
+
+    echo ""
+}
+
+track_branches ()
+{
+    echo "************************************************************"
+    echo "Tracking all branches..."
+
+    for BRANCH in $(git branch -a | grep remotes | grep -v HEAD | grep -v master); do git branch --track "${BRANCH#remotes/*/}" "${BRANCH}"; done
+
+    echo ""
+}
+
+merge_branches ()
+{
+    local repo=$1
+
+    echo "************************************************************"
+    echo "Merging all branches..."
+
+    git checkout master
+    git merge -q -m "OBR merge of $repo/master" $repo/master
+    for BRANCH in $(git --git-dir ../../$repo branch | grep -v HEAD | grep -v master); do git checkout "${BRANCH}"; git merge -q -m "OBR merge of $repo/${BANCH}" "$repo/${BRANCH}"; done
+
+    echo ""
+}
+
+if [ ! -d obr-temp ];
+then
+   echo "**** OBR-merge working directory not found, you have to run step 1 and 2 first"
+   exit 1
+fi
+
+pushd obr-temp
+
+rm -rf "final-merge"
+mkdir "final-merge"
+pushd "final-merge"
+
+git clone $githubmergerepo "final-merge-repo"
+pushd "final-merge-repo"
+
+for name in "common" "runtime" "cmr" "language" "compiler-js" "compiler-java" "typechecker" "model" "dist"
+do
+    add_remote $name
+done
+
+git fetch --all
+git fetch --tags
+
+for name in "common" "runtime" "cmr" "language" "compiler-js" "compiler-java" "typechecker" "model" "dist"
+do
+    merge_branches $name
+done
+
+echo "Now use the following commands to push to the remote repository:"
+echo ""
+echo "git push --all"
+echo "git push --tags"
+

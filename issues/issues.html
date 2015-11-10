@@ -1,0 +1,36 @@
+<html>
+<head>
+<title>OBR Issues</title>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="github.js"></script>
+<script type="text/javascript" src="migrate.js"></script>
+<style>
+#monitor {
+    position: fixed;
+    top: 1px;
+    right: 1px;
+    border-width: 1px;
+    border-style: solid;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+</style>
+</head>
+<body>
+    <a href="index.html"><-- Back to index</a>
+    <h1>Migrate Issues</h1>
+    <button onclick="createMilestoneMap()">Create Milestone Map</button>
+    <hr>
+    <div id="mstones"></div>
+    <hr>
+    <div id="issues"></div>
+    <hr>
+    <div id="overview"></div>
+    <hr>
+    <div id="creating"></div>
+    <div id="waiting"></div>
+    <div id="monitor">Limit: <span id="limit">?</span></div>
+</body>
+</html>
