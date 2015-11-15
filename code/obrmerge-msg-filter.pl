@@ -15,14 +15,14 @@ sub offset {
     $issue = "";
     given($projname) {
         when(["compiler", "compiler-java"]) { $issue = "#" . ($issuenum + 0); }
-        when(["js", "compiler-js"]) { $issue = "#" . ($issuenum + 2418); }
-        when(["spec", "typechecker"]) { $issue = "#" . ($issuenum + 3088); }
-        when("model") {  $issue = "#" . ($issuenum + 4552); }
-        when("common") { $issue = "#" . ($issuenum + 4571); }
-        when("module-resolver" || "cmr") { $issue = "#" . ($issuenum + 4635); }
-        when("runtime") { $issue = "#" . ($issuenum + 4767); }
-        when("language") {  $issue = "#" . ($issuenum + 4850); }
-        when("dist") {  $issue = "#" . ($issuenum + 5641); }
+        when(["js", "compiler-js"]) { $issue = "#" . ($issuenum + 2431); }
+        when(["spec", "typechecker"]) { $issue = "#" . ($issuenum + 3106); }
+        when("model") {  $issue = "#" . ($issuenum + 4576); }
+        when("common") { $issue = "#" . ($issuenum + 4597); }
+        when("module-resolver" || "cmr") { $issue = "#" . ($issuenum + 4662); }
+        when("runtime") { $issue = "#" . ($issuenum + 4795); }
+        when("language") {  $issue = "#" . ($issuenum + 4878); }
+        when("dist") {  $issue = "#" . ($issuenum + 5673); }
     }
 
     return $issue;

@@ -365,7 +365,14 @@ function fetchComments(repo, newname, onEnd) {
     function onItem(item) {
         cnt++;
         var data = {};
-        data.body = "[@" + item.data.user.login + "] " + item.data.body;
+        var usertag = "[@" + item.data.user.login + "]";
+        var body = item.data.body;
+        if (/^\s*[^a-zA-Z\s].*(\r)\n/.test(body)) {
+            body = usertag + "\n" + body;
+        } else {
+            body = usertag + " " + body;
+        }
+        data.body = body;
         data.created_at = item.data.created_at;
         var issueurl = item.data.issue_url;
         var p = issueurl.indexOf("/issues/");
@@ -438,15 +445,21 @@ function waitForRateLimit(onEnd) {
 
 function createIssue(issueid, issue, onEnd) {
     issueidx++;
+
+    if (issue.created_ok === true) {
+        onEnd();
+        return;
+    }
     
     function handleImport(json, status, xhr) {
+        issue.created_ok = true;
         $("#creating").text("Created " + issueidx + " of " + Object.keys(issues).length + " status: " + json.status);
         if (json.status == "pending") {
             checkImport(json, onEnd);
         } else if (json.status == "imported") {
             onEnd();
         } else {
-            handleError();
+            handleError(xhr, -1, "handleImport - status");
         }
     }
     
@@ -458,24 +471,41 @@ function createIssue(issueid, issue, onEnd) {
     body = body + "\n[Migrated from " + escapeRefs("ceylon/" + issue.issue.org_repo + "#" + issue.issue.org_number) + "]";
     if (issue.issue.closed == true) {
         if (issue.issue.org_closee != null) {
-            body = body + "\n[Closed by @" + issue.issue.org_closee + " at " + issue.issue.org_closed_at + "]";
+            body = body + "\n[Closed by @" + issue.issue.org_closee + " at " + stripDate(issue.issue.org_closed_at) + "]";
         } else {
-            body = body + "\n[Closed at " + issue.issue.org_closed_at + "]";
+            body = body + "\n[Closed at " + stripDate(issue.issue.org_closed_at) + "]";
         }
     }
-    issue.issue.body = body;
-    
+
+    var newissue = {
+        issue: {
+            title: issue.issue.title,
+            body: body,
+            created_at: issue.issue.created_at,
+            assignee: issue.issue.assignee,
+            milestone: issue.issue.milestone,
+            closed: issue.issue.closed,
+            labels: issue.issue.labels
+        },
+        comments: []
+    };
+
     $.each(issue.comments, function(idx, comment) {
         var body = comment.body;
         body = convertIssueLinks(body, issue.issue.org_repo, issueoffsets);
-        comment.body = body;
+        var newcomment = {
+            created_at: comment.created_at,
+            body: body
+        }
+        newissue.comments.push(newcomment);
     });
     
-    delete issue.issue.org_repo;
-    delete issue.issue.org_number;
-    delete issue.issue.org_closee;
-    delete issue.issue.org_closed_at;
-    github.importIssue("ceylon", "ceylon-obr-test", {data: issue, success: handleImport, error: handleError});
+    console.log(issueidx, newissue);
+    github.importIssue("ceylon", "ceylon-obr-test", {data: newissue, success: handleImport, error: handleError});
+}
+
+function stripDate(dt) {
+    return dt.replace(/T/g, " ").replace(/Z/g, "");
 }
 
 function checkImport(json, onEnd) {
@@ -487,7 +517,7 @@ function checkImport(json, onEnd) {
         } else if (json.status == "imported") {
             setTimeout(onEnd, 2000);
         } else {
-            handleError();
+            handleError(xhr, -1, "checkImport - status");
         }
     }
     
@@ -498,9 +528,10 @@ function checkImport(json, onEnd) {
     }, 2000);
 }
 
-function handleError() {
+function handleError(xhr, status, err) {
     $("#waiting").text("");
     $("#creating").append("<br><b>FAILED</b>");
+    console.log(xhr, status, err);
 }
 
 function allDone() {

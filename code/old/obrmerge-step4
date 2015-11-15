@@ -1,0 +1,36 @@
+#!/bin/bash
+
+SCRIPT=$(readlink -f $0)
+SCRIPTPATH=`dirname $SCRIPT`
+
+# ID of the only commit in "clean-repo" which will serve as the root for the others
+graftid="4b5b937df0e1e78b53c92e879531dc84e4aa3912"
+
+rewrite_parents ()
+{
+    git rev-list --max-parents=0 HEAD ^$graftid | awk "{print \$1 \" $graftid\"}" > .git/info/grafts
+
+    local commitfiltercmd='echo -n "${GIT_COMMIT}," >>/tmp/obrmergelog2; git commit-tree "$@" | tee -a /tmp/obrmergelog2'
+
+    local tagnamefiltercmd='cat'
+
+    echo "Rewriting $repo ..."
+    #echo git filter-branch --tag-name-filter \"$tagnamefiltercmd\" --commit-filter \"$commitfiltercmd\" -- --all
+    git filter-branch --tag-name-filter "$tagnamefiltercmd" --commit-filter "$commitfiltercmd" -- --all
+
+    echo ""
+    popd
+}
+
+if [ ! -d obr-temp/obr-merge-target ];
+then
+   echo "**** OBR-merge working directory doesn't exist, please run steps 1 - 3 first"
+   exit 1
+fi
+
+pushd obr-temp/obr-merge-target
+
+rm -f /tmp/obrmergelog2
+
+rewrite_parents
+

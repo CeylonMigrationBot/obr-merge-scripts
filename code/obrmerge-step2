@@ -49,7 +49,7 @@ rename_tags_branches ()
     fi
 
     # so some house keeping
-    #git gc --aggressive
+    git gc --aggressive
 
     # Mark that this step was performed for this repository
     touch .step2

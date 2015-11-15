@@ -1,0 +1,87 @@
+#!/bin/bash
+
+githubmergerepo=git@github.com:ceylon/ceylon-obr-test.git
+
+localmergerepo=obr-merge-target
+
+merge_repository ()
+{
+    local repo=$1
+
+    # Check if repository exists
+    if [ ! -d "$repo" ];
+    then
+       echo "**** Repository $repo not found, skipping"
+       return
+    fi
+
+    pushd $repo
+
+    # Check if step2 was done yet
+    if [ ! -f .step2 ];
+    then
+       echo "**** Please run OBR-merge step2 for $repo first, skipping"
+       return
+    fi
+
+    # Get list of branches (removing "master" and the current branch indicator "*")
+    local branches=`git branch | sed -r -e 's/\*|master//g'`
+
+    popd
+    pushd "$localmergerepo"
+
+    # Check if the merge was already done
+    if [ -f ".step3-$repo" ];
+    then
+       echo "**** OBR-merge step3 was already run for $repo, skipping"
+       return
+    fi
+
+    echo "************************************************************"
+    echo "Merging repository $repo ..."
+
+    git remote add -f $repo ../$repo
+
+    if [ ! -z "$branches" ];
+    then
+        for b in "master" $branches
+        do
+            echo "Merging branch $b ..."
+            git checkout $b
+            git merge -s ours -m "OBR merge of $repo/$b" $repo/$b
+        done
+    fi
+
+    # Mark that this step was performed for this repository
+    touch ".step3-$repo"
+
+    echo ""
+    popd
+}
+
+if [ ! -d obr-temp ];
+then
+   echo "**** OBR-merge working directory not found, you have to run step1 first"
+   exit 1
+fi
+
+pushd obr-temp
+
+if [ -d "$localmergerepo" ];
+then
+   echo "**** OBR-merge target repository already exists, remove it if you want to re-run"
+   exit 1
+fi
+
+git clone $githubmergerepo $localmergerepo
+#git init $localmergerepo
+
+for name in "dist" "common" "language" "runtime" "cmr" "compiler-js" "compiler-java" "typechecker"
+do
+    merge_repository $name
+done
+
+# Now manually push everything with
+#  git push --all origin
+#  git push --tags origin
+

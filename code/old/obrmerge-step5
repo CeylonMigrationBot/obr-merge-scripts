@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ ! -d obr-temp/obr-merge-target ];
+then
+   echo "**** OBR-merge working directory doesn't exist, please run steps 1 - 4 first"
+   exit 1
+fi
+
+if [ ! -f /tmp/obrmergelog ] || [ ! -f /tmp/obrmergelog2 ];
+then
+   echo "**** OBR-merge logs don't exist, please run steps 1 - 4 first"
+   exit 1
+fi
+
+pushd obr-temp/obr-merge-target
+
+echo "# This file contains the mapping between SHA1s from the Git repositories before" > obrmerge-commit-map
+echo "# the merge to their corresponding SHA1s in the new repository" >> obrmerge-commit-map
+echo "" >> obrmerge-commit-map
+cat /tmp/obrmergelog2 >> obrmerge-commit-map
+
+echo "Joining commit logs (takes a long time, please wait)..."
+sed -r 's/([0-9a-z]+),([0-9a-z]+)/\2\/\1/g' < /tmp/obrmergelog | xargs -I % sed -i 's/%/g' obrmerge-commit-map
+

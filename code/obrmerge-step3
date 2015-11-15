@@ -1,6 +1,6 @@
 #!/bin/bash
 
-githubmergerepo=git@github.com:ceylon/ceylon-obr-test3.git
+githubmergerepo=git@github.com:ceylon/ceylon.git
 # temporary test!!
 #githubmergerepo=../pushtest
 ######

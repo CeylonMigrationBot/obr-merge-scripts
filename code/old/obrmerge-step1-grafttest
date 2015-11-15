@@ -1,0 +1,68 @@
+#!/bin/bash
+
+SCRIPT=$(readlink -f $0)
+SCRIPTPATH=`dirname $SCRIPT`
+
+# ID of the only commit in "clean-repo" which will serve as the root for the others
+graftid="4b5b937df0e1e78b53c92e879531dc84e4aa3912"
+
+clone_and_rewrite ()
+{
+    local repo=`echo $1 | sed -r -e 's/^(.+):.*$/\1/g'`
+    local newname=`echo $1 | sed -r -e 's/^.*:(.+)$/\1/g'`
+
+    echo "************************************************************"
+    echo "Cloning $repo as $newname ..."
+    git clone --mirror git@github.com:ceylon/$repo.git $newname
+    pushd $newname
+
+#    git remote add -f clean ../../clean-repo
+#    git rev-list --max-parents=0 HEAD ^$graftid | awk "{print \$1 \" $graftid\"}" > info/grafts
+    git rev-list --max-parents=0 HEAD | awk "{print \$1 \" $graftid\"}" > info/grafts
+
+    local qrepo=`echo $repo | sed -e 's/[.-]/\\\\\0/g'`
+    local qnewname=`echo $newname | sed -e 's/[.-]/\\\\\0/g'`
+
+    # SED command for replacing #NNN with ceylon/ceylon-xxxx#NNN (deprecated)
+    #local msgfiltercmd='sed -r "s/([^a-z])(#[0-9]+)/\1ceylon\/'$qrepo'\2/g"'
+    # PERL command for replacing #MMM or ceylon/ceylon-XXX#MMM with a new offset #NNN
+    local msgfiltercmd="perl \"$SCRIPTPATH/obrmerge-msg-filter.pl\" $newname"
+
+    # Command for rewriting Git index files making it seem as if everything has always been in a subfolder
+    local indexfiltercmd='git ls-files -s | sed "s-\t\"*-&'$qnewname'/-" | GIT_INDEX_FILE=$GIT_INDEX_FILE.new git update-index --index-info && mv "$GIT_INDEX_FILE.new" "$GIT_INDEX_FILE" || echo "Ignoring error"'
+
+    # SED command for prepending the repo name to all tags
+    #local tagnamefiltercmd='sed "s-.*-'$qnewname'_&-"'
+    # Which doesn't seem to work as expected so we just leave them unchanged for now
+    # and do the necessary work in the step2 script
+    local tagnamefiltercmd='cat'
+
+    local commitfiltercmd='echo -n "${GIT_COMMIT}," >>/tmp/obrmergelog; git commit-tree "$@" | tee -a /tmp/obrmergelog'
+
+    echo "Rewriting $repo ..."
+    #echo git filter-branch  --msg-filter \'$msgfiltercmd\' --index-filter \'$indexfiltercmd\' --tag-name-filter \"$tagnamefiltercmd\" -- --all
+    git filter-branch  --msg-filter "$msgfiltercmd" --index-filter "$indexfiltercmd" --tag-name-filter "$tagnamefiltercmd" --commit-filter "$commitfiltercmd" -- --all
+
+    echo ""
+    popd
+}
+
+if [ -d obr-temp ];
+then
+   echo "**** OBR-merge working directory already exists, remove it if you want to re-run the merge"
+   exit 1
+fi
+
+mkdir obr-temp
+pushd obr-temp
+
+rm -f /tmp/obrmergelog
+
+#for name in "ceylon-dist:dist" "ceylon-common:common" "ceylon.language:language" "ceylon-runtime:runtime" "ceylon-module-resolver:cmr" "ceylon-js:compiler-js" "ceylon-compiler:compiler-java" "ceylon-spec:typechecker"
+for name in "ceylon-dist:dist" "ceylon-common:common"
+do
+    clone_and_rewrite $name
+done
+
+cp /tmp/obrmergelog obrmerge-commit-map
+

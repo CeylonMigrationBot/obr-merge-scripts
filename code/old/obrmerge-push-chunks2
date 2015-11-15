@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#remote=origin
+remote=xxx
+
+push_branch ()
+{
+    local branch=$1
+
+    git checkout $branch
+
+    for i in $(seq 1100 -10 0)
+    do
+        git push $remote master~$i:master
+    done
+    git push $remote master:master
+}
+
+count_words() { echo $#; }
+
+if [ ! -d obr-temp/obr-merge-target ];
+then
+   echo "**** OBR-merge working directory not found, you have to run step 1 to 3 first"
+   exit 1
+fi
+
+pushd obr-temp/obr-merge-target
+
+branch=master
+push_branch $branch
+
+git checkout master
+

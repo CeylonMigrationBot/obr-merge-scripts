@@ -1,6 +1,6 @@
 #!/bin/bash
 
-githubmergerepo=git@github.com:ceylon/ceylon-obr-test.git
+githubmergerepo=git@github.com:ceylon/ceylon.git
 # temporary test!!
 #githubmergerepo=../pushtest
 ######
@@ -30,6 +30,7 @@ wipe_repo ()
     git clone -q --mirror ../clean-repo wiperepo2
     pushd wiperepo2
     git remote add pushtarget $githubmergerepo
+    git gc --aggressive
     git push --force --all pushtarget
     git push --force --tags pushtarget
     popd

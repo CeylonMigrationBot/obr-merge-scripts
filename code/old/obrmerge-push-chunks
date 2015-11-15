@@ -1,0 +1,52 @@
+#!/bin/bash
+
+remote=xxx
+#remote=origin
+
+push_batch ()
+{
+    local branch=$1
+    local sha1=$2
+    echo "Pushing batch $idx of $cnt of branch $branch (up to $sha1)"
+    #git checkout -q $sha1
+    #git push origin HEAD:$branch
+    #du -h --max-depth=1
+    git rev-list $sha1 --not --remotes=$remote | wc -l
+    git push -q --force $remote $sha1:$branch
+    #sleep 10
+}
+
+push_branch ()
+{
+    local branch=$1
+
+    # Give us each Nth commit SHA1 and the very last one
+    #sha1s=`git log --oneline --reverse --topo-order $branch | awk 'NR == 1 || NR % 900 == 0 { print $1 } END { print $1 }'`
+    sha1s=`git log --oneline --reverse --topo-order $branch | awk ' { print $1 } END { print $1 }'`
+    cnt=$(count_words $sha1s)
+
+    git checkout $branch
+
+    idx=1
+    for sha1 in $sha1s
+    do
+        push_batch $branch $sha1
+        idx=$[$idx +1]
+    done
+}
+
+count_words() { echo $#; }
+
+if [ ! -d obr-temp/obr-merge-target ];
+then
+   echo "**** OBR-merge working directory not found, you have to run step 1 to 3 first"
+   exit 1
+fi
+
+pushd obr-temp/obr-merge-target
+
+branch=master
+push_branch $branch
+
+git checkout master
+
